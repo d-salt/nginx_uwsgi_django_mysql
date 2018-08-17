@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: myproject.db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      TZ: "Asia/Tokyo"
+
+  web:
+    build: .
+    container_name: myproject.web
+    command: uwsgi --ini /uwsgi/uwsgi.ini
+    volumes:
+      - ./code:/code
+      - ./uwsgi:/uwsgi
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:1.13
+    container_name: myproject.nginx
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./uwsgi:/etc/nginx/uwsgi
+      - ./code/static:/usr/share/nginx/html/static
+    ports:
+      - "8000:8000"
+    depends_on:
+      - web
+
+volumes:
+  mysql_data:
